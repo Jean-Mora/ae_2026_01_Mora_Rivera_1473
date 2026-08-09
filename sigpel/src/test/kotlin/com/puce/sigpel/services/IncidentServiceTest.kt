@@ -53,4 +53,17 @@ class IncidentServiceTest {
         assert(savedSlot.captured.loan === loan)
         assert(savedSlot.captured.type == IncidentType.LOSS)
     }
+
+    @Test
+    fun `list returns all incidents ordered by report date descending`() {
+        val incidents = listOf(
+            Incident(id = 2L, loan = loan, type = IncidentType.DELAY),
+            Incident(id = 1L, loan = loan, type = IncidentType.DAMAGE)
+        )
+        every { incidentRepository.findAllByOrderByReportDateDesc() } returns incidents
+
+        val result = incidentService.list()
+
+        assert(result == incidents)
+    }
 }
