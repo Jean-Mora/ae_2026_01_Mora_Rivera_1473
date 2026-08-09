@@ -7,17 +7,25 @@ import com.puce.sigpel.entities.EquipmentStatus
 import com.puce.sigpel.exceptions.DuplicateResourceException
 import com.puce.sigpel.exceptions.ResourceNotFoundException
 import com.puce.sigpel.repositories.EquipmentRepository
+import com.puce.sigpel.storage.S3Service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 
 @Service
 @Transactional
 class EquipmentService(
     private val equipmentRepository: EquipmentRepository,
-    private val equipmentCategoryService: EquipmentCategoryService
+    private val equipmentCategoryService: EquipmentCategoryService,
+    private val s3Service: S3Service
 ) {
     private val log = LoggerFactory.getLogger(EquipmentService::class.java)
+
+    companion object {
+        private val ALLOWED_IMAGE_TYPES = setOf("image/jpeg", "image/png")
+        private const val MAX_IMAGE_SIZE_BYTES = 5L * 1024 * 1024
+    }
 
     @Transactional(readOnly = true)
     fun list(categoryId: Long?, status: EquipmentStatus?): List<Equipment> {
@@ -59,6 +67,26 @@ class EquipmentService(
         equipment.status = request.status
         val saved = equipmentRepository.save(equipment)
         log.info("event=equipment.status_changed | msg=Equipment status changed | equipmentId=${saved.id} from=$previousStatus to=${saved.status}")
+        return saved
+    }
+
+    fun uploadImage(id: Long, file: MultipartFile): Equipment {
+        val equipment = get(id)
+
+        if (file.isEmpty) {
+            throw IllegalArgumentException("The image file is required")
+        }
+        if (file.contentType !in ALLOWED_IMAGE_TYPES) {
+            throw IllegalArgumentException("Only image/jpeg and image/png files are allowed")
+        }
+        if (file.size > MAX_IMAGE_SIZE_BYTES) {
+            throw IllegalArgumentException("The image cannot exceed 5MB")
+        }
+
+        val url = s3Service.uploadImage(id, file)
+        equipment.imageUrl = url
+        val saved = equipmentRepository.save(equipment)
+        log.info("event=equipment.image_updated | msg=Equipment image updated | equipmentId=${saved.id} imageUrl=\"${saved.imageUrl}\"")
         return saved
     }
 

@@ -35,5 +35,6 @@ data class EquipmentResponse(
     val name: String,
     val serialNumber: String?,
     val status: EquipmentStatus,
-    val description: String?
+    val description: String?,
+    val imageUrl: String?
 )

@@ -21,7 +21,8 @@ fun Equipment.toResponse() = EquipmentResponse(
     name = name,
     serialNumber = serialNumber,
     status = status,
-    description = description
+    description = description,
+    imageUrl = imageUrl
 )
 
 fun Loan.toResponse() = LoanResponse(

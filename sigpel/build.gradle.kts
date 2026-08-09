@@ -27,6 +27,10 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+    // Sube y sirve las imagenes de equipos. Usa DefaultCredentialsProvider,
+    // que en EC2 toma las credenciales del IAM Role de la instancia
+    // (nunca access key/secret key hardcodeadas).
+    implementation("software.amazon.awssdk:s3:2.28.11")
 
     runtimeOnly("org.postgresql:postgresql")
 

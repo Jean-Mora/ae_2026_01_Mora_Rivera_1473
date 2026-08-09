@@ -24,8 +24,21 @@ spring:
           # https://cognito-idp.us-east-1.amazonaws.com/us-east-1_XXXXXXXXX
           issuer-uri: https://cognito-idp.${AWS_REGION:us-east-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}
 
+  # Limite un poco por encima de los 5MB que valida EquipmentService, para
+  # que sea esa validacion (400 con mensaje claro) la que dispare primero,
+  # y no MaxUploadSizeExceededException de Spring.
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 6MB
+
 server:
   port: 8080
+
+aws:
+  s3:
+    bucket: ${S3_BUCKET_NAME:sigpel-equipos-imagenes-jpmora}
+    region: ${AWS_REGION:us-east-1}
 
 logging:
   pattern:

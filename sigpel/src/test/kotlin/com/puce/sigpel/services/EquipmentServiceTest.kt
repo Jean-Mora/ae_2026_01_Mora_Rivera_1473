@@ -7,6 +7,7 @@ import com.puce.sigpel.entities.EquipmentStatus
 import com.puce.sigpel.exceptions.DuplicateResourceException
 import com.puce.sigpel.exceptions.ResourceNotFoundException
 import com.puce.sigpel.repositories.EquipmentRepository
+import com.puce.sigpel.storage.S3Service
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -15,17 +16,19 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.mock.web.MockMultipartFile
 import java.util.Optional
 
 class EquipmentServiceTest {
 
     private val equipmentRepository = mockk<EquipmentRepository>()
     private val equipmentCategoryService = mockk<EquipmentCategoryService>()
+    private val s3Service = mockk<S3Service>()
     private lateinit var equipmentService: EquipmentService
 
     @BeforeEach
     fun setUp() {
-        equipmentService = EquipmentService(equipmentRepository, equipmentCategoryService)
+        equipmentService = EquipmentService(equipmentRepository, equipmentCategoryService, s3Service)
     }
 
     @Test
@@ -155,5 +158,69 @@ class EquipmentServiceTest {
 
         verify(exactly = 0) { equipmentRepository.findByCategoryAndStatus(any(), any()) }
         verify(exactly = 0) { equipmentRepository.findAllWithCategory() }
+    }
+
+    // --- uploadImage() ---
+
+    @Test
+    fun `uploadImage uploads to S3 and saves the returned url`() {
+        val equipment = Equipment(id = 1L, category = EquipmentCategory(id = 1L, name = "Electronics"), name = "Multimeter")
+        val file = MockMultipartFile("file", "photo.jpg", "image/jpeg", "fake-image-bytes".toByteArray())
+        every { equipmentRepository.findById(1L) } returns Optional.of(equipment)
+        every { s3Service.uploadImage(1L, file) } returns "https://bucket.s3.us-east-1.amazonaws.com/equipment/1/photo.jpg"
+        every { equipmentRepository.save(any()) } answers { firstArg() }
+
+        val result = equipmentService.uploadImage(1L, file)
+
+        assertEquals("https://bucket.s3.us-east-1.amazonaws.com/equipment/1/photo.jpg", result.imageUrl)
+        verify(exactly = 1) { equipmentRepository.save(equipment) }
+    }
+
+    @Test
+    fun `uploadImage throws ResourceNotFoundException when the equipment does not exist`() {
+        val file = MockMultipartFile("file", "photo.jpg", "image/jpeg", "bytes".toByteArray())
+        every { equipmentRepository.findById(99L) } returns Optional.empty()
+
+        assertThrows(ResourceNotFoundException::class.java) {
+            equipmentService.uploadImage(99L, file)
+        }
+        verify(exactly = 0) { s3Service.uploadImage(any(), any()) }
+    }
+
+    @Test
+    fun `uploadImage rejects a file type other than jpeg or png`() {
+        val equipment = Equipment(id = 1L, category = EquipmentCategory(id = 1L, name = "Electronics"), name = "Multimeter")
+        val file = MockMultipartFile("file", "doc.pdf", "application/pdf", "bytes".toByteArray())
+        every { equipmentRepository.findById(1L) } returns Optional.of(equipment)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            equipmentService.uploadImage(1L, file)
+        }
+        verify(exactly = 0) { s3Service.uploadImage(any(), any()) }
+    }
+
+    @Test
+    fun `uploadImage rejects a file larger than 5MB`() {
+        val equipment = Equipment(id = 1L, category = EquipmentCategory(id = 1L, name = "Electronics"), name = "Multimeter")
+        val oversized = ByteArray(5 * 1024 * 1024 + 1)
+        val file = MockMultipartFile("file", "photo.jpg", "image/jpeg", oversized)
+        every { equipmentRepository.findById(1L) } returns Optional.of(equipment)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            equipmentService.uploadImage(1L, file)
+        }
+        verify(exactly = 0) { s3Service.uploadImage(any(), any()) }
+    }
+
+    @Test
+    fun `uploadImage rejects an empty file`() {
+        val equipment = Equipment(id = 1L, category = EquipmentCategory(id = 1L, name = "Electronics"), name = "Multimeter")
+        val file = MockMultipartFile("file", "photo.jpg", "image/jpeg", ByteArray(0))
+        every { equipmentRepository.findById(1L) } returns Optional.of(equipment)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            equipmentService.uploadImage(1L, file)
+        }
+        verify(exactly = 0) { s3Service.uploadImage(any(), any()) }
     }
 }
