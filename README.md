@@ -1,6 +1,6 @@
 # SIGPEL — Proyecto Integrador (Arquitectura Empresarial)
 
-**Integrantes:** Jean Mora, _(completar apellido Rivera con nombre completo)_
+**Integrantes:** Jean Pierre Mora Santillán, Luis Mateo Rivera Escalante
 **NRC:** 1473
 **Periodo:** 2026-01
 **Proyecto:** SIGPEL — Sistema de Gestión de Préstamos de Equipos de Laboratorio
