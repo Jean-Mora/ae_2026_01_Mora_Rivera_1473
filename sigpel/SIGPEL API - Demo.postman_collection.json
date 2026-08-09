@@ -624,6 +624,286 @@
       ]
     },
     {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create my profile (ESTUDIANTE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Juan Estudiante\",\n  \"email\": \"jestudiante@puce.edu.ec\",\n  \"phone\": \"0999999999\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "description": "El cognitoId se toma del claim 'sub' del token, no del body."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test(\"Save id to {{user_id}}\", function () {",
+                  "    if (pm.response.code < 300) { const json = pm.response.json(); pm.collectionVariables.set('user_id', json.id); pm.collectionVariables.set('cognito_id', json.cognitoId); }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get my profile (ESTUDIANTE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update my profile (ESTUDIANTE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Juan Estudiante Actualizado\",\n  \"email\": \"jestudiante@puce.edu.ec\",\n  \"phone\": \"0988888888\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List all users (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by id (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "{{user_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by cognitoId (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users/cognito/{{cognito_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "cognito",
+                "{{cognito_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create profile without a token -> 401",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sin token\",\n  \"email\": \"sintoken@puce.edu.ec\",\n  \"phone\": \"0999999999\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete user (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "{{user_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Auth",
       "item": [
         {
@@ -830,6 +1110,14 @@
     {
       "key": "incident_id",
       "value": "1"
+    },
+    {
+      "key": "user_id",
+      "value": "1"
+    },
+    {
+      "key": "cognito_id",
+      "value": ""
     },
     {
       "key": "token_estudiante",
