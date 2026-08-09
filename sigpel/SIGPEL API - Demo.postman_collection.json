@@ -234,7 +234,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoryId\": {{category_id}},\n  \"name\": \"\",\n  \"description\": \"Classroom projector, includes HDMI cable\"\n}"
+              "raw": "{\n  \"categoryId\": {{category_id}},\n  \"name\": \"\",\n  \"serialNumber\": \"\",\n  \"description\": \"Classroom projector, includes HDMI cable\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/equipment",
@@ -245,7 +245,7 @@
                 "equipment"
               ]
             },
-            "description": "Se pueden crear varios equipos con el mismo nombre dentro de la misma categoria (por ejemplo, varias laptops identicas como items de inventario separados)."
+            "description": "Se pueden crear varios equipos con el mismo nombre dentro de la misma categoria (por ejemplo, varias laptops identicas como items de inventario separados), pero serialNumber es obligatorio y unico: devuelve 409 Conflict si ya existe otro equipo con el mismo serialNumber."
           },
           "response": []
         },
