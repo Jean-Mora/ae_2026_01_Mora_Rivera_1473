@@ -258,6 +258,47 @@
           "response": []
         },
         {
+          "name": "Upload equipment image (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/sigpel/equipment/{{equipment_id}}/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sigpel",
+                "equipment",
+                "{{equipment_id}}",
+                "image"
+              ]
+            },
+            "description": "Solo image/jpeg o image/png, maximo 5MB. Selecciona un archivo en el campo 'file' (form-data) antes de enviar. Devuelve el equipo actualizado con la nueva imageUrl publica."
+          },
+          "response": []
+        },
+        {
           "name": "Update equipment status (ENCARGADO)",
           "request": {
             "auth": {
