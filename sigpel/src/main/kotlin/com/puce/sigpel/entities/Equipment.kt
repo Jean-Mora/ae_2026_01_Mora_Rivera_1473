@@ -42,6 +42,11 @@ class Equipment(
     @Column(length = 255)
     var description: String? = null,
 
+    // URL publica de la imagen en S3 (bucket con lectura publica), o null si
+    // el equipo todavia no tiene una imagen cargada.
+    @Column(name = "image_url", length = 500)
+    var imageUrl: String? = null,
+
     // Optimistic locking: protects against two students requesting the same
     // equipment at the same time. If two transactions read the same version and
     // both try to save, the second one fails with ObjectOptimisticLockingFailureException

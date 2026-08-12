@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "0d9289ea-acd5-4d42-b8dd-35c1bf89a47e",
     "name": "SIGPEL API - Demo",
-    "description": "Coleccion de demo para la API de SIGPEL (Sistema de Gestion de Prestamos de Equipos).\n\nAutenticacion: la API valida JWT emitidos por AWS Cognito (Bearer token). Antes de correr los requests protegidos, obten un id_token/access_token de Cognito (con el claim `cognito:groups` = ENCARGADO o ESTUDIANTE) y pegalo en la variable de coleccion `jwt_token`.\n\nEndpoints publicos (no requieren token): GET /categories, GET /equipment, GET /equipment/{id}.",
+    "description": "Coleccion de demo para la API de SIGPEL (Sistema de Gestion de Prestamos de Equipos).\n\nAutenticacion: la API valida JWT emitidos por AWS Cognito (Bearer token). Antes de correr los requests protegidos, obten un id_token/access_token de Cognito (con el claim `cognito:groups` = ENCARGADO o ESTUDIANTE) y pegalo en la variable de coleccion `jwt_token`.\n\nTodas las rutas pasan por nginx con el prefijo /sigpel (nginx es el unico punto de entrada publico; el microservicio no esta expuesto directamente).\n\nEndpoints publicos (no requieren token): GET /sigpel/categories, GET /sigpel/equipment, GET /sigpel/equipment/{id}.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "54540741",
     "_collection_link": "https://go.postman.co/collection/54540741-0d9289ea-acd5-4d42-b8dd-35c1bf89a47e?source=collection_link"
@@ -20,11 +20,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/categories",
+              "raw": "{{base_url}}/sigpel/categories",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "categories"
               ]
             }
@@ -56,11 +57,12 @@
               "raw": "{\n  \"name\": \"\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/categories",
+              "raw": "{{base_url}}/sigpel/categories",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "categories"
               ]
             },
@@ -93,11 +95,12 @@
               "raw": "{\n  \"name\": \"Laptops\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/categories/{{category_id}}",
+              "raw": "{{base_url}}/sigpel/categories/{{category_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "categories",
                 "{{category_id}}"
               ]
@@ -122,11 +125,12 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/categories/{{category_id}}",
+              "raw": "{{base_url}}/sigpel/categories/{{category_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "categories",
                 "{{category_id}}"
               ]
@@ -148,11 +152,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/equipment",
+              "raw": "{{base_url}}/sigpel/equipment",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "equipment"
               ]
             }
@@ -168,11 +173,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/equipment?categoryId={{category_id}}&status=MAINTENANCE",
+              "raw": "{{base_url}}/sigpel/equipment?categoryId={{category_id}}&status=MAINTENANCE",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "equipment"
               ],
               "query": [
@@ -200,11 +206,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/equipment/{{equipment_id}}",
+              "raw": "{{base_url}}/sigpel/equipment/{{equipment_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "equipment",
                 "{{equipment_id}}"
               ]
@@ -234,18 +241,60 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoryId\": {{category_id}},\n  \"name\": \"\",\n  \"description\": \"Classroom projector, includes HDMI cable\"\n}"
+              "raw": "{\n  \"categoryId\": {{category_id}},\n  \"name\": \"\",\n  \"serialNumber\": \"\",\n  \"description\": \"Classroom projector, includes HDMI cable\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/equipment",
+              "raw": "{{base_url}}/sigpel/equipment",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "equipment"
               ]
             },
-            "description": "Se pueden crear varios equipos con el mismo nombre dentro de la misma categoria (por ejemplo, varias laptops identicas como items de inventario separados)."
+            "description": "Se pueden crear varios equipos con el mismo nombre dentro de la misma categoria (por ejemplo, varias laptops identicas como items de inventario separados), pero serialNumber es obligatorio y unico: devuelve 409 Conflict si ya existe otro equipo con el mismo serialNumber."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload equipment image (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/sigpel/equipment/{{equipment_id}}/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sigpel",
+                "equipment",
+                "{{equipment_id}}",
+                "image"
+              ]
+            },
+            "description": "Solo image/jpeg o image/png, maximo 5MB. Selecciona un archivo en el campo 'file' (form-data) antes de enviar. Devuelve el equipo actualizado con la nueva imageUrl publica."
           },
           "response": []
         },
@@ -274,11 +323,12 @@
               "raw": "{\n  \"status\": \"MAINTENANCE\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/equipment/{{equipment_id}}",
+              "raw": "{{base_url}}/sigpel/equipment/{{equipment_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "equipment",
                 "{{equipment_id}}"
               ]
@@ -302,11 +352,12 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/equipment/{{equipment_id}}",
+              "raw": "{{base_url}}/sigpel/equipment/{{equipment_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "equipment",
                 "{{equipment_id}}"
               ]
@@ -344,11 +395,12 @@
               "raw": "{\n  \"equipmentId\": {{equipment_id}},\n  \"estimatedReturnDate\": \"2026-08-10T17:00:00Z\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/loans",
+              "raw": "{{base_url}}/sigpel/loans",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "loans"
               ]
             },
@@ -372,11 +424,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/loans/me",
+              "raw": "{{base_url}}/sigpel/loans/me",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "loans",
                 "me"
               ]
@@ -400,11 +453,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/loans",
+              "raw": "{{base_url}}/sigpel/loans",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "loans"
               ]
             }
@@ -436,11 +490,12 @@
               "raw": "{\n  \"status\": \"APPROVED\",\n  \"comment\": \"Delivered at warehouse 2\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/loans/{{loan_id}}",
+              "raw": "{{base_url}}/sigpel/loans/{{loan_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "loans",
                 "{{loan_id}}"
               ]
@@ -465,11 +520,12 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/loans/{{loan_id}}",
+              "raw": "{{base_url}}/sigpel/loans/{{loan_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "loans",
                 "{{loan_id}}"
               ]
@@ -507,11 +563,12 @@
               "raw": "{\n  \"loanId\": {{loan_id}},\n  \"type\": \"DAMAGE\",\n  \"description\": \"Projector screen has stains\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/incidents",
+              "raw": "{{base_url}}/sigpel/incidents",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "incidents"
               ]
             },
@@ -535,11 +592,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/incidents/{{incident_id}}",
+              "raw": "{{base_url}}/sigpel/incidents/{{incident_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "incidents",
                 "{{incident_id}}"
               ]
@@ -572,11 +630,12 @@
               "raw": "{\n  \"loanId\": {{loan_id}},\n  \"type\": \"DELAY\",\n  \"description\": \"Delivered 2 days late\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/incidents/{{incident_id}}",
+              "raw": "{{base_url}}/sigpel/incidents/{{incident_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "incidents",
                 "{{incident_id}}"
               ]
@@ -590,13 +649,294 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/incidents/{{incident_id}}",
+              "raw": "{{base_url}}/sigpel/incidents/{{incident_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "sigpel",
                 "incidents",
                 "{{incident_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create my profile (ESTUDIANTE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Juan Estudiante\",\n  \"email\": \"jestudiante@puce.edu.ec\",\n  \"phone\": \"0999999999\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "description": "El cognitoId se toma del claim 'sub' del token, no del body."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test(\"Save id to {{user_id}}\", function () {",
+                  "    if (pm.response.code < 300) { const json = pm.response.json(); pm.collectionVariables.set('user_id', json.id); pm.collectionVariables.set('cognito_id', json.cognitoId); }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get my profile (ESTUDIANTE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update my profile (ESTUDIANTE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Juan Estudiante Actualizado\",\n  \"email\": \"jestudiante@puce.edu.ec\",\n  \"phone\": \"0988888888\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List all users (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by id (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "{{user_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by cognitoId (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users/cognito/{{cognito_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "cognito",
+                "{{cognito_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create profile without a token -> 401",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sin token\",\n  \"email\": \"sintoken@puce.edu.ec\",\n  \"phone\": \"0999999999\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete user (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "{{user_id}}"
               ]
             }
           },
@@ -790,7 +1130,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://54.211.44.223:8080"
+      "value": "http://54.211.44.223:9090"
     },
     {
       "key": "jwt_token",
@@ -811,6 +1151,14 @@
     {
       "key": "incident_id",
       "value": "1"
+    },
+    {
+      "key": "user_id",
+      "value": "1"
+    },
+    {
+      "key": "cognito_id",
+      "value": ""
     },
     {
       "key": "token_estudiante",

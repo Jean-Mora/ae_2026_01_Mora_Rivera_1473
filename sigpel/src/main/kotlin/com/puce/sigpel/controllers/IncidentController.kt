@@ -23,6 +23,10 @@ import org.springframework.web.bind.annotation.RestController
 class IncidentController(
     private val incidentService: IncidentService
 ) {
+    @GetMapping
+    fun list(): List<IncidentResponse> =
+        incidentService.list().map { it.toResponse() }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun register(@Valid @RequestBody request: IncidentRequest): IncidentResponse =

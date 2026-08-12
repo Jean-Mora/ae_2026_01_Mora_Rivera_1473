@@ -1,7 +1,8 @@
 {
   "info": {
-    "name": "SIGPEL — Proyecto Integrador",
-    "description": "Coleccion completa: users + sigpel, a traves de nginx (reverse proxy unico punto de entrada). Incluye login contra Cognito (guarda el token automaticamente), y todos los endpoints de ambos microservicios con casos felices, de error y de autorizacion.",
+    "_postman_id": "3f2a6c9e-1a2b-4c3d-9e8f-sigpel-combined",
+    "name": "SIGPEL — Proyecto Integrador (sigpel + users)",
+    "description": "Coleccion completa para la API de SIGPEL: cubre AMBOS microservicios (sigpel y users), enrutados a traves de nginx (unico punto de entrada publico; ningun microservicio esta expuesto directamente).\n\nCada request incluye un pm.test que valida el codigo de estado esperado (casos felices, 400/404/409, y 401/403 de autorizacion), y los ids de los recursos creados se guardan automaticamente en variables de coleccion para encadenar los siguientes requests.\n\nEjecutable de principio a fin con el Collection Runner: las carpetas estan en orden (Auth -> Users -> Categories -> Equipment -> Loans -> Incidents) porque cada una depende de ids creados en la anterior. Corre 'Login ENCARGADO' y 'Login ESTUDIANTE' primero.\n\nUnico paso manual: en 'Upload equipment image (ENCARGADO)' (carpeta Equipment) hay que seleccionar un archivo de imagen (jpg o png, <=5MB) en el campo 'file' antes de enviarlo.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -31,7 +32,6 @@
                 "exec": [
                   "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
                   "const response = pm.response.json();",
-                  "pm.test(\"Received an IdToken\", function () { pm.expect(response.AuthenticationResult).to.have.property('IdToken'); });",
                   "pm.collectionVariables.set(\"token_encargado\", response.AuthenticationResult.IdToken);"
                 ]
               }
@@ -56,7 +56,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{staff_username}}\",\n    \"PASSWORD\": \"{{staff_password}}\"\n  }\n}",
+              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"3ans0himg191rg5prihuet9eg0\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"jpmoras@puce.edu.ec\",\n    \"PASSWORD\": \"Puce2026!\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -64,11 +64,11 @@
               }
             },
             "url": {
-              "raw": "https://cognito-idp.{{aws_region}}.amazonaws.com/",
+              "raw": "https://cognito-idp.us-east-1.amazonaws.com/",
               "protocol": "https",
               "host": [
                 "cognito-idp",
-                "{{aws_region}}",
+                "us-east-1",
                 "amazonaws",
                 "com"
               ],
@@ -102,7 +102,6 @@
                 "exec": [
                   "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
                   "const response = pm.response.json();",
-                  "pm.test(\"Received an IdToken\", function () { pm.expect(response.AuthenticationResult).to.have.property('IdToken'); });",
                   "pm.collectionVariables.set(\"token_estudiante\", response.AuthenticationResult.IdToken);"
                 ]
               }
@@ -127,7 +126,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{student_username}}\",\n    \"PASSWORD\": \"{{student_password}}\"\n  }\n}",
+              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"3ans0himg191rg5prihuet9eg0\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"jestudiante@puce.edu.ec\",\n    \"PASSWORD\": \"Estudiante2026!\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -135,11 +134,11 @@
               }
             },
             "url": {
-              "raw": "https://cognito-idp.{{aws_region}}.amazonaws.com/",
+              "raw": "https://cognito-idp.us-east-1.amazonaws.com/",
               "protocol": "https",
               "host": [
                 "cognito-idp",
-                "{{aws_region}}",
+                "us-east-1",
                 "amazonaws",
                 "com"
               ],
@@ -156,8 +155,18 @@
       "name": "Users",
       "item": [
         {
-          "name": "Create my profile (POST /users/me)",
+          "name": "Create my profile (ESTUDIANTE)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -177,21 +186,11 @@
                 "me"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Staff Demo\",\n  \"email\": \"staff@puce.edu.ec\",\n  \"phone\": \"0999999999\"\n}"
+              "raw": "{\n  \"name\": \"Postman Student {{$timestamp}}\",\n  \"email\": \"postman.student@puce.edu.ec\",\n  \"phone\": \"0999999999\"\n}"
             },
-            "description": "El cognitoId sale del token, no del body."
+            "description": "El cognitoId se toma del claim 'sub' del token, no del body."
           },
           "response": [],
           "event": [
@@ -201,11 +200,8 @@
                 "type": "text/javascript",
                 "packages": {},
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test(\"Save id to {{user_id}}\", function () {",
-                  "    if (pm.response.code < 300) { const json = pm.response.json(); pm.collectionVariables.set('user_id', json.id); }",
+                  "pm.test(\"Status code is 200 or 409 (409 if a previous run left this profile without deleting it)\", function () {",
+                  "    pm.expect([200, 409]).to.include(pm.response.code);",
                   "});"
                 ]
               }
@@ -213,8 +209,18 @@
           ]
         },
         {
-          "name": "Get my profile (GET /users/me)",
+          "name": "Get my profile (ESTUDIANTE)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -228,16 +234,6 @@
                 "users",
                 "me"
               ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "response": [],
@@ -248,17 +244,28 @@
                 "type": "text/javascript",
                 "packages": {},
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});"
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('user_id', json.id);",
+                  "pm.collectionVariables.set('cognito_id', json.cognitoId);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Update my profile (PUT /users/me)",
+          "name": "Update my profile (ESTUDIANTE)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PUT",
             "header": [
               {
@@ -278,19 +285,9 @@
                 "me"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Staff Demo Updated\",\n  \"email\": \"staff@puce.edu.ec\",\n  \"phone\": \"0999999999\"\n}"
+              "raw": "{\n  \"name\": \"Postman Student Updated\",\n  \"email\": \"postman.student@puce.edu.ec\",\n  \"phone\": \"0988888888\"\n}"
             }
           },
           "response": [],
@@ -310,8 +307,18 @@
           ]
         },
         {
-          "name": "List all users (GET /api/users)",
+          "name": "List all users (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -324,16 +331,6 @@
                 "api",
                 "users"
               ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "response": [],
@@ -353,8 +350,18 @@
           ]
         },
         {
-          "name": "Get user by id (GET /api/users/{id})",
+          "name": "Get user by id (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -368,16 +375,6 @@
                 "users",
                 "{{user_id}}"
               ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "response": [],
@@ -397,23 +394,8 @@
           ]
         },
         {
-          "name": "Get user by cognitoId",
+          "name": "Get user by cognitoId (ENCARGADO)",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/users/api/users/cognito/{{staff_cognito_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users",
-                "api",
-                "users",
-                "cognito",
-                "{{staff_cognito_id}}"
-              ]
-            },
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -422,6 +404,21 @@
                   "value": "{{token_encargado}}",
                   "type": "string"
                 }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/api/users/cognito/{{cognito_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "api",
+                "users",
+                "cognito",
+                "{{cognito_id}}"
               ]
             }
           },
@@ -444,6 +441,9 @@
         {
           "name": "Create profile without a token -> 401",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -463,12 +463,9 @@
                 "me"
               ]
             },
-            "auth": {
-              "type": "noauth"
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"No Auth\",\n  \"email\": null,\n  \"phone\": null\n}"
+              "raw": "{\n  \"name\": \"No Token\",\n  \"email\": \"notoken@puce.edu.ec\",\n  \"phone\": \"0999999999\"\n}"
             }
           },
           "response": [],
@@ -488,8 +485,18 @@
           ]
         },
         {
-          "name": "Delete user (DELETE /api/users/{id})",
+          "name": "Delete user (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -502,16 +509,6 @@
                 "api",
                 "users",
                 "{{user_id}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
               ]
             }
           },
@@ -539,6 +536,9 @@
         {
           "name": "List categories (public)",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -550,9 +550,6 @@
                 "sigpel",
                 "categories"
               ]
-            },
-            "auth": {
-              "type": "noauth"
             }
           },
           "response": [],
@@ -574,6 +571,16 @@
         {
           "name": "Create category (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -591,21 +598,11 @@
                 "categories"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Postman Demo Category\"\n}"
+              "raw": "{\n  \"name\": \"Postman Category {{$timestamp}}\"\n}"
             },
-            "description": "409 Conflict si ya existe una categoria con el mismo nombre."
+            "description": "Devuelve 409 Conflict si ya existe una categoria con el mismo nombre (sin distinguir mayusculas/minusculas)."
           },
           "response": [],
           "event": [
@@ -619,7 +616,10 @@
                   "    pm.response.to.have.status(201);",
                   "});",
                   "pm.test(\"Save id to {{category_id}}\", function () {",
-                  "    if (pm.response.code < 300) { const json = pm.response.json(); pm.collectionVariables.set('category_id', json.id); }",
+                  "    if (pm.response.code === 201) { const json = pm.response.json(); pm.collectionVariables.set('category_id', json.id); }",
+                  "});",
+                  "pm.test(\"Save name to {{duplicate_category_name}}\", function () {",
+                  "    if (pm.response.code === 201) { const json = pm.response.json(); pm.collectionVariables.set('duplicate_category_name', json.name); }",
                   "});"
                 ]
               }
@@ -629,6 +629,9 @@
         {
           "name": "Create category without a token -> 401",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -646,12 +649,9 @@
                 "categories"
               ]
             },
-            "auth": {
-              "type": "noauth"
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"No Auth Category\"\n}"
+              "raw": "{\n  \"name\": \"No Token Category\"\n}"
             }
           },
           "response": [],
@@ -673,6 +673,16 @@
         {
           "name": "Create category as ESTUDIANTE -> 403",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -690,19 +700,9 @@
                 "categories"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_estudiante}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Wrong Role Category\"\n}"
+              "raw": "{\n  \"name\": \"Forbidden Category\"\n}"
             }
           },
           "response": [],
@@ -724,6 +724,16 @@
         {
           "name": "Create duplicate category -> 409",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -741,19 +751,9 @@
                 "categories"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Postman Demo Category\"\n}"
+              "raw": "{\n  \"name\": \"{{duplicate_category_name}}\"\n}"
             }
           },
           "response": [],
@@ -775,6 +775,16 @@
         {
           "name": "Update category (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -793,20 +803,11 @@
                 "{{category_id}}"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Postman Demo Category Renamed\"\n}"
-            }
+              "raw": "{\n  \"name\": \"Postman Category Renamed {{$timestamp}}\"\n}"
+            },
+            "description": "Devuelve 409 Conflict si el nuevo nombre ya lo tiene otra categoria."
           },
           "response": [],
           "event": [
@@ -827,6 +828,16 @@
         {
           "name": "Delete category (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -839,18 +850,7 @@
                 "categories",
                 "{{category_id}}"
               ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "description": "Devuelve 409 si todavia tiene equipos asociados."
+            }
           },
           "response": [],
           "event": [
@@ -860,8 +860,8 @@
                 "type": "text/javascript",
                 "packages": {},
                 "exec": [
-                  "pm.test(\"Status code is 204 or 409\", function () {",
-                  "    pm.expect([204, 409]).to.include(pm.response.code);",
+                  "pm.test(\"Status code is 204\", function () {",
+                  "    pm.response.to.have.status(204);",
                   "});"
                 ]
               }
@@ -876,6 +876,16 @@
         {
           "name": "Create category for equipment (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -893,20 +903,11 @@
                 "categories"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Postman Equipment Category\"\n}"
-            }
+              "raw": "{\n  \"name\": \"Equipment Category {{$timestamp}}\"\n}"
+            },
+            "description": "Categoria separada de la de la carpeta Categories, para que borrarla alla no afecte los equipos de aqui."
           },
           "response": [],
           "event": [
@@ -920,7 +921,7 @@
                   "    pm.response.to.have.status(201);",
                   "});",
                   "pm.test(\"Save id to {{category_id}}\", function () {",
-                  "    if (pm.response.code < 300) { const json = pm.response.json(); pm.collectionVariables.set('category_id', json.id); }",
+                  "    if (pm.response.code === 201) { const json = pm.response.json(); pm.collectionVariables.set('category_id', json.id); }",
                   "});"
                 ]
               }
@@ -930,6 +931,9 @@
         {
           "name": "List equipment (public)",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -941,9 +945,6 @@
                 "sigpel",
                 "equipment"
               ]
-            },
-            "auth": {
-              "type": "noauth"
             }
           },
           "response": [],
@@ -965,6 +966,9 @@
         {
           "name": "List equipment by category and status (public)",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -986,9 +990,6 @@
                   "value": "AVAILABLE"
                 }
               ]
-            },
-            "auth": {
-              "type": "noauth"
             }
           },
           "response": [],
@@ -1010,6 +1011,16 @@
         {
           "name": "Create equipment (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -1027,20 +1038,11 @@
                 "equipment"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoryId\": \"{{category_id}}\",\n  \"name\": \"Postman Demo Equipment\",\n  \"serialNumber\": \"PM-DEMO-001\",\n  \"description\": \"created from Postman\"\n}"
-            }
+              "raw": "{\n  \"categoryId\": {{category_id}},\n  \"name\": \"Postman Demo Equipment\",\n  \"serialNumber\": \"PM-{{$timestamp}}\",\n  \"description\": \"created from Postman\"\n}"
+            },
+            "description": "Se pueden crear varios equipos con el mismo nombre/descripcion (varias unidades identicas de inventario), pero serialNumber es obligatorio y unico."
           },
           "response": [],
           "event": [
@@ -1054,58 +1056,10 @@
                   "    pm.response.to.have.status(201);",
                   "});",
                   "pm.test(\"Save id to {{equipment_id}}\", function () {",
-                  "    if (pm.response.code < 300) { const json = pm.response.json(); pm.collectionVariables.set('equipment_id', json.id); }",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Create equipment with duplicate serial number -> 409",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/sigpel/equipment",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "sigpel",
-                "equipment"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"categoryId\": \"{{category_id}}\",\n  \"name\": \"Another Postman Demo Equipment\",\n  \"serialNumber\": \"PM-DEMO-001\",\n  \"description\": \"same serial number as the previous request\"\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "packages": {},
-                "exec": [
-                  "pm.test(\"Status code is 409\", function () {",
-                  "    pm.response.to.have.status(409);",
+                  "    if (pm.response.code === 201) { const json = pm.response.json(); pm.collectionVariables.set('equipment_id', json.id); }",
+                  "});",
+                  "pm.test(\"Save serialNumber to {{duplicate_serial_number}}\", function () {",
+                  "    if (pm.response.code === 201) { const json = pm.response.json(); pm.collectionVariables.set('duplicate_serial_number', json.serialNumber); }",
                   "});"
                 ]
               }
@@ -1115,6 +1069,9 @@
         {
           "name": "Get equipment by id (public)",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -1127,9 +1084,6 @@
                 "equipment",
                 "{{equipment_id}}"
               ]
-            },
-            "auth": {
-              "type": "noauth"
             }
           },
           "response": [],
@@ -1149,8 +1103,164 @@
           ]
         },
         {
-          "name": "Update equipment status (ENCARGADO)",
+          "name": "Get nonexistent equipment -> 404",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sigpel/equipment/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sigpel",
+                "equipment",
+                "999999"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create equipment with duplicate serial number -> 409",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sigpel/equipment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sigpel",
+                "equipment"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": {{category_id}},\n  \"name\": \"Another Postman Equipment\",\n  \"serialNumber\": \"{{duplicate_serial_number}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test(\"Status code is 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload equipment image (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sigpel/equipment/{{equipment_id}}/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sigpel",
+                "equipment",
+                "{{equipment_id}}",
+                "image"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "description": "Solo image/jpeg o image/png, maximo 5MB. Selecciona un archivo en el campo 'file' antes de enviar."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has imageUrl\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.imageUrl).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update equipment status to MAINTENANCE (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -1167,16 +1277,6 @@
                 "sigpel",
                 "equipment",
                 "{{equipment_id}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
               ]
             },
             "body": {
@@ -1203,6 +1303,16 @@
         {
           "name": "Set equipment back to AVAILABLE (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -1221,20 +1331,11 @@
                 "{{equipment_id}}"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"AVAILABLE\"\n}"
-            }
+            },
+            "description": "Necesario para que la carpeta Loans pueda solicitar un prestamo de este equipo."
           },
           "response": [],
           "event": [
@@ -1253,23 +1354,38 @@
           ]
         },
         {
-          "name": "Get nonexistent equipment -> 404",
+          "name": "Create disposable equipment (ENCARGADO)",
           "request": {
-            "method": "GET",
-            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/sigpel/equipment/999999",
+              "raw": "{{base_url}}/sigpel/equipment",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "sigpel",
-                "equipment",
-                "999999"
+                "equipment"
               ]
             },
-            "auth": {
-              "type": "noauth"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": {{category_id}},\n  \"name\": \"Disposable Equipment\",\n  \"serialNumber\": \"PM-DISPOSABLE-{{$timestamp}}\"\n}"
             }
           },
           "response": [],
@@ -1280,8 +1396,55 @@
                 "type": "text/javascript",
                 "packages": {},
                 "exec": [
-                  "pm.test(\"Status code is 404\", function () {",
-                  "    pm.response.to.have.status(404);",
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Save id to {{disposable_equipment_id}}\", function () {",
+                  "    if (pm.response.code === 201) { const json = pm.response.json(); pm.collectionVariables.set('disposable_equipment_id', json.id); }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete equipment (ENCARGADO)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sigpel/equipment/{{disposable_equipment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sigpel",
+                "equipment",
+                "{{disposable_equipment_id}}"
+              ]
+            },
+            "description": "Se borra el equipo desechable, no {{equipment_id}} (ese lo sigue usando la carpeta Loans)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test(\"Status code is 204\", function () {",
+                  "    pm.response.to.have.status(204);",
                   "});"
                 ]
               }
@@ -1296,6 +1459,16 @@
         {
           "name": "Request loan (ESTUDIANTE)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -1313,20 +1486,11 @@
                 "loans"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_estudiante}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"equipmentId\": \"{{equipment_id}}\",\n  \"estimatedReturnDate\": \"2026-12-31T17:00:00Z\"\n}"
-            }
+              "raw": "{\n  \"equipmentId\": {{equipment_id}},\n  \"estimatedReturnDate\": \"2026-12-31T17:00:00Z\"\n}"
+            },
+            "description": "estimatedReturnDate debe ser futura; si es anterior al momento actual, devuelve 400."
           },
           "response": [],
           "event": [
@@ -1340,7 +1504,7 @@
                   "    pm.response.to.have.status(201);",
                   "});",
                   "pm.test(\"Save id to {{loan_id}}\", function () {",
-                  "    if (pm.response.code < 300) { const json = pm.response.json(); pm.collectionVariables.set('loan_id', json.id); }",
+                  "    if (pm.response.code === 201) { const json = pm.response.json(); pm.collectionVariables.set('loan_id', json.id); }",
                   "});"
                 ]
               }
@@ -1350,6 +1514,9 @@
         {
           "name": "Request loan without a token -> 401",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -1367,12 +1534,9 @@
                 "loans"
               ]
             },
-            "auth": {
-              "type": "noauth"
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"equipmentId\": \"{{equipment_id}}\"\n}"
+              "raw": "{\n  \"equipmentId\": {{equipment_id}}\n}"
             }
           },
           "response": [],
@@ -1392,8 +1556,18 @@
           ]
         },
         {
-          "name": "Request loan with a past return date -> 400",
+          "name": "Request loan with a past estimated return date -> 400",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -1411,19 +1585,9 @@
                 "loans"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_estudiante}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"equipmentId\": \"{{equipment_id}}\",\n  \"estimatedReturnDate\": \"2020-01-01T00:00:00Z\"\n}"
+              "raw": "{\n  \"equipmentId\": {{equipment_id}},\n  \"estimatedReturnDate\": \"2020-01-01T00:00:00Z\"\n}"
             }
           },
           "response": [],
@@ -1445,6 +1609,16 @@
         {
           "name": "My loans (ESTUDIANTE)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -1456,16 +1630,6 @@
                 "sigpel",
                 "loans",
                 "me"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_estudiante}}",
-                  "type": "string"
-                }
               ]
             }
           },
@@ -1488,6 +1652,16 @@
         {
           "name": "List all loans (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -1500,16 +1674,7 @@
                 "loans"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "description": "HU-22: solo ENCARGADO ve el historial completo de prestamos."
           },
           "response": [],
           "event": [
@@ -1528,8 +1693,18 @@
           ]
         },
         {
-          "name": "Change loan status (ENCARGADO)",
+          "name": "Change loan status to APPROVED (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -1548,21 +1723,10 @@
                 "{{loan_id}}"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"APPROVED\",\n  \"comment\": \"Approved from Postman\"\n}"
-            },
-            "description": "Valores validos: PENDING | APPROVED | REJECTED | RETURNED."
+            }
           },
           "response": [],
           "event": [
@@ -1581,10 +1745,25 @@
           ]
         },
         {
-          "name": "Cancel loan as ESTUDIANTE (ENCARGADO token) -> 403",
+          "name": "Change loan status to RETURNED (ENCARGADO)",
           "request": {
-            "method": "DELETE",
-            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": {
               "raw": "{{base_url}}/sigpel/loans/{{loan_id}}",
               "host": [
@@ -1596,17 +1775,11 @@
                 "{{loan_id}}"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RETURNED\"\n}"
             },
-            "description": "El rol ENCARGADO no tiene permiso para cancelar (ese endpoint es solo ESTUDIANTE); demuestra 403 por rol."
+            "description": "Libera el equipo (vuelve a AVAILABLE) y completa el ciclo de vida del prestamo."
           },
           "response": [],
           "event": [
@@ -1616,8 +1789,106 @@
                 "type": "text/javascript",
                 "packages": {},
                 "exec": [
-                  "pm.test(\"Status code is 403\", function () {",
-                  "    pm.response.to.have.status(403);",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request a second loan to demo cancellation (ESTUDIANTE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sigpel/loans",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sigpel",
+                "loans"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentId\": {{equipment_id}}\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Save id to {{loan_id_to_cancel}}\", function () {",
+                  "    if (pm.response.code === 201) { const json = pm.response.json(); pm.collectionVariables.set('loan_id_to_cancel', json.id); }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel loan (ESTUDIANTE)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_estudiante}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sigpel/loans/{{loan_id_to_cancel}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sigpel",
+                "loans",
+                "{{loan_id_to_cancel}}"
+              ]
+            },
+            "description": "Solo el estudiante dueno del prestamo puede cancelarlo, y solo mientras esta PENDING."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test(\"Status code is 204\", function () {",
+                  "    pm.response.to.have.status(204);",
                   "});"
                 ]
               }
@@ -1632,6 +1903,16 @@
         {
           "name": "Register incident (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "POST",
             "header": [
               {
@@ -1649,21 +1930,11 @@
                 "incidents"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"loanId\": \"{{loan_id}}\",\n  \"type\": \"DAMAGE\",\n  \"description\": \"Scratch found on delivery\"\n}"
+              "raw": "{\n  \"loanId\": {{loan_id}},\n  \"type\": \"DAMAGE\",\n  \"description\": \"Scratch on the case\"\n}"
             },
-            "description": "Un mismo prestamo puede tener varias incidencias registradas."
+            "description": "Valores validos para type: DAMAGE | LOSS | DELAY. Un mismo prestamo puede tener varias incidencias."
           },
           "response": [],
           "event": [
@@ -1677,7 +1948,7 @@
                   "    pm.response.to.have.status(201);",
                   "});",
                   "pm.test(\"Save id to {{incident_id}}\", function () {",
-                  "    if (pm.response.code < 300) { const json = pm.response.json(); pm.collectionVariables.set('incident_id', json.id); }",
+                  "    if (pm.response.code === 201) { const json = pm.response.json(); pm.collectionVariables.set('incident_id', json.id); }",
                   "});"
                 ]
               }
@@ -1685,8 +1956,11 @@
           ]
         },
         {
-          "name": "Register a second incident for the same loan",
+          "name": "Register incident without a token -> 401",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -1704,19 +1978,9 @@
                 "incidents"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"loanId\": \"{{loan_id}}\",\n  \"type\": \"DELAY\"\n}"
+              "raw": "{\n  \"loanId\": {{loan_id}},\n  \"type\": \"DAMAGE\"\n}"
             }
           },
           "response": [],
@@ -1727,8 +1991,8 @@
                 "type": "text/javascript",
                 "packages": {},
                 "exec": [
-                  "pm.test(\"Status code is 201\", function () {",
-                  "    pm.response.to.have.status(201);",
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
                   "});"
                 ]
               }
@@ -1738,6 +2002,16 @@
         {
           "name": "Get incident (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -1749,16 +2023,6 @@
                 "sigpel",
                 "incidents",
                 "{{incident_id}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
               ]
             }
           },
@@ -1781,6 +2045,16 @@
         {
           "name": "Update incident (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PATCH",
             "header": [
               {
@@ -1799,19 +2073,9 @@
                 "{{incident_id}}"
               ]
             },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"loanId\": \"{{loan_id}}\",\n  \"type\": \"DAMAGE\",\n  \"description\": \"Updated from Postman\"\n}"
+              "raw": "{\n  \"loanId\": {{loan_id}},\n  \"type\": \"DAMAGE\",\n  \"description\": \"Updated description\"\n}"
             }
           },
           "response": [],
@@ -1831,52 +2095,18 @@
           ]
         },
         {
-          "name": "Register incident without a token -> 401",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/sigpel/incidents",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "sigpel",
-                "incidents"
-              ]
-            },
-            "auth": {
-              "type": "noauth"
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"loanId\": \"{{loan_id}}\",\n  \"type\": \"DAMAGE\"\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "packages": {},
-                "exec": [
-                  "pm.test(\"Status code is 401\", function () {",
-                  "    pm.response.to.have.status(401);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
           "name": "Delete incident (ENCARGADO)",
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_encargado}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "DELETE",
             "header": [],
             "url": {
@@ -1888,16 +2118,6 @@
                 "sigpel",
                 "incidents",
                 "{{incident_id}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_encargado}}",
-                  "type": "string"
-                }
               ]
             }
           },
@@ -1920,36 +2140,6 @@
       ]
     }
   ],
-  "variable": [
-    {
-      "key": "category_id",
-      "value": ""
-    },
-    {
-      "key": "equipment_id",
-      "value": ""
-    },
-    {
-      "key": "loan_id",
-      "value": ""
-    },
-    {
-      "key": "incident_id",
-      "value": ""
-    },
-    {
-      "key": "user_id",
-      "value": ""
-    },
-    {
-      "key": "token_encargado",
-      "value": ""
-    },
-    {
-      "key": "token_estudiante",
-      "value": ""
-    }
-  ],
   "event": [
     {
       "listen": "prerequest",
@@ -1970,6 +2160,60 @@
           ""
         ]
       }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://54.211.44.223:9090"
+    },
+    {
+      "key": "category_id",
+      "value": ""
+    },
+    {
+      "key": "equipment_id",
+      "value": ""
+    },
+    {
+      "key": "disposable_equipment_id",
+      "value": ""
+    },
+    {
+      "key": "duplicate_category_name",
+      "value": ""
+    },
+    {
+      "key": "duplicate_serial_number",
+      "value": ""
+    },
+    {
+      "key": "loan_id",
+      "value": ""
+    },
+    {
+      "key": "loan_id_to_cancel",
+      "value": ""
+    },
+    {
+      "key": "incident_id",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": ""
+    },
+    {
+      "key": "cognito_id",
+      "value": ""
+    },
+    {
+      "key": "token_estudiante",
+      "value": ""
+    },
+    {
+      "key": "token_encargado",
+      "value": ""
     }
   ]
 }

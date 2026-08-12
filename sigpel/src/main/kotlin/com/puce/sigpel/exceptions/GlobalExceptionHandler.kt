@@ -1,6 +1,7 @@
 package com.puce.sigpel.exceptions
 
 import jakarta.servlet.http.HttpServletRequest
+import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -9,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.multipart.MaxUploadSizeExceededException
 
 /**
  * Translates business exceptions into consistent HTTP responses:
@@ -20,6 +22,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
  */
 @RestControllerAdvice
 class GlobalExceptionHandler {
+
+    private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     @ExceptionHandler(ResourceNotFoundException::class)
     fun handleNotFound(ex: ResourceNotFoundException, req: HttpServletRequest): ResponseEntity<ErrorResponse> =
@@ -51,6 +55,18 @@ class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgument(ex: IllegalArgumentException, req: HttpServletRequest): ResponseEntity<ErrorResponse> =
         build(HttpStatus.BAD_REQUEST, ex.message, req)
+
+    /** The uploaded file is larger than spring.servlet.multipart.max-file-size. */
+    @ExceptionHandler(MaxUploadSizeExceededException::class)
+    fun handleMaxUploadSizeExceeded(ex: MaxUploadSizeExceededException, req: HttpServletRequest): ResponseEntity<ErrorResponse> =
+        build(HttpStatus.BAD_REQUEST, "The uploaded file is too large", req)
+
+    /** Catch-all: never leak internal details (e.g. AWS SDK exceptions) to the client. */
+    @ExceptionHandler(Exception::class)
+    fun handleUnexpected(ex: Exception, req: HttpServletRequest): ResponseEntity<ErrorResponse> {
+        log.error("Unexpected error handling ${req.method} ${req.requestURI}", ex)
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", req)
+    }
 
     private fun build(status: HttpStatus, message: String?, req: HttpServletRequest): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(status).body(

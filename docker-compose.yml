@@ -93,6 +93,9 @@ services:
       DB_PASSWORD: ${SIGPEL_DB_PASSWORD:-sigpel}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:?Set COGNITO_USER_POOL_ID in .env}
+      # Credenciales de S3 via IAM Role de la instancia EC2 (sigpel-ec2-s3-role),
+      # no via variables de entorno.
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-sigpel-equipos-imagenes-jpmora}
     expose:
       - "8080"
     depends_on:

@@ -21,6 +21,9 @@ class IncidentService(
         incidentRepository.findById(id)
             .orElseThrow { ResourceNotFoundException("Incident $id not found") }
 
+    @Transactional(readOnly = true)
+    fun list(): List<Incident> = incidentRepository.findAllByOrderByReportDateDesc()
+
     /** The loan-incident relationship is 1:N: a loan can have several incidents. */
     fun register(request: IncidentRequest): Incident {
         val loan = loanService.get(request.loanId)

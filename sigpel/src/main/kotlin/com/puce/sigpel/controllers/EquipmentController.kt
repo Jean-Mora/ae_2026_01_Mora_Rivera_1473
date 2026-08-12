@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/equipment")
@@ -47,6 +48,11 @@ class EquipmentController(
     @PreAuthorize("hasRole('ENCARGADO')")
     fun updateStatus(@PathVariable id: Long, @Valid @RequestBody request: EquipmentStatusRequest): EquipmentResponse =
         equipmentService.updateStatus(id, request).toResponse()
+
+    @PostMapping("/{id}/image")
+    @PreAuthorize("hasRole('ENCARGADO')")
+    fun uploadImage(@PathVariable id: Long, @RequestParam("file") file: MultipartFile): EquipmentResponse =
+        equipmentService.uploadImage(id, file).toResponse()
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ENCARGADO')")

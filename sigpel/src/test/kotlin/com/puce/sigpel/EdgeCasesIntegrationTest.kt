@@ -1,14 +1,17 @@
 package com.puce.sigpel
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.puce.sigpel.storage.S3Service
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import org.mockito.BDDMockito.given
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt
@@ -16,6 +19,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -47,6 +51,9 @@ class EdgeCasesIntegrationTest {
 
     @MockitoBean
     private lateinit var jwtDecoder: JwtDecoder
+
+    @MockitoBean
+    private lateinit var s3Service: S3Service
 
     companion object {
         private var categoryId: Long = 0
@@ -199,5 +206,59 @@ class EdgeCasesIntegrationTest {
         val duplicateBody = """{"categoryId":$categoryId,"name":"Duplicate Serial Equipment B","serialNumber":"EDGE-CASE-DUP-001"}"""
         mockMvc.perform(post("/equipment").with(staff()).contentType(MediaType.APPLICATION_JSON).content(duplicateBody))
             .andExpect(status().isConflict)
+    }
+
+    @Test
+    @Order(11)
+    fun `a student cannot upload an equipment image`() {
+        val file = MockMultipartFile("file", "photo.jpg", "image/jpeg", "bytes".toByteArray())
+
+        mockMvc.perform(multipart("/equipment/$equipmentId/image").file(file).with(student("student-image")))
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    @Order(12)
+    fun `uploading an equipment image with an unsupported content type returns 400`() {
+        val file = MockMultipartFile("file", "doc.pdf", "application/pdf", "bytes".toByteArray())
+
+        mockMvc.perform(multipart("/equipment/$equipmentId/image").file(file).with(staff()))
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    @Order(13)
+    fun `staff uploads a valid equipment image and the response reflects the new imageUrl`() {
+        val file = MockMultipartFile("file", "photo.jpg", "image/jpeg", "bytes".toByteArray())
+        val expectedUrl = "https://sigpel-equipos-imagenes-jpmora.s3.us-east-1.amazonaws.com/equipment/$equipmentId/photo.jpg"
+        given(s3Service.uploadImage(equipmentId, file)).willReturn(expectedUrl)
+
+        mockMvc.perform(multipart("/equipment/$equipmentId/image").file(file).with(staff()))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.imageUrl").value(expectedUrl))
+
+        mockMvc.perform(get("/equipment/$equipmentId"))
+            .andExpect(jsonPath("$.imageUrl").value(expectedUrl))
+    }
+
+    @Test
+    @Order(14)
+    fun `uploading an equipment image larger than the multipart limit returns 400`() {
+        val oversized = ByteArray(6 * 1024 * 1024 + 1)
+        val file = MockMultipartFile("file", "huge.jpg", "image/jpeg", oversized)
+
+        mockMvc.perform(multipart("/equipment/$equipmentId/image").file(file).with(staff()))
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    @Order(15)
+    fun `an unexpected failure while uploading an equipment image returns 500 without leaking internal details`() {
+        val file = MockMultipartFile("file", "photo.jpg", "image/jpeg", "bytes".toByteArray())
+        given(s3Service.uploadImage(equipmentId, file)).willThrow(RuntimeException("Failed to upload image to S3"))
+
+        mockMvc.perform(multipart("/equipment/$equipmentId/image").file(file).with(staff()))
+            .andExpect(status().isInternalServerError)
+            .andExpect(jsonPath("$.message").value("An unexpected error occurred"))
     }
 }
